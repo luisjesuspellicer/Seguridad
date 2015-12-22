@@ -7,6 +7,7 @@ import org.owasp.esapi.codecs.MySQLCodec;
 import org.owasp.esapi.errors.EncodingException;
 import org.owasp.esapi.errors.IntrusionException;
 
+import java.util.ArrayList;
 import java.util.Scanner;
 
 /**
@@ -40,6 +41,34 @@ public class Main {
     // Cadenas de texto tratadas (correspondientes al formulario tratado)
     static String nombre; static String direccion; static String dni;
     static String tipo; static String numero; static String mes; static String anio; static String cvn;
+
+    // Lista de cadenas de texto leidas por entrada estandar
+    static ArrayList<String> leidas = new ArrayList<>();
+
+    /**
+     * Método encargado de mostrar las diferentes cadenas del formulario por pantalla, con sus correspondientes
+     * modificaciones (si ha sido especificada alguna opción y ha sido necesario).
+     */
+    public static void imprimirResultados(boolean formulario){
+        System.out.println("\n\n--- Resultados finales ---");
+        if(formulario) {
+            // Se imprimen por pantalla los resultados de las cadenas correspondientes al formulario
+            System.out.println("Nombre: " + nombre);
+            System.out.println("Dirección: " + direccion);
+            System.out.println("DNI: " + dni);
+            System.out.println("Tipo tarjeta crédito: " + tipo);
+            System.out.println("Número tarjeta crédito: " + numero);
+            System.out.println("Mes expiración tarjeta crédito: " + mes);
+            System.out.println("Año expiración tarjeta crédito: " + anio);
+            System.out.println("Código CVN tarjeta crédito: " + cvn);
+        } else {
+            // Para cada cadena leída, se imprime por pantalla su resultado
+            for(String s : leidas){
+                System.out.println(s);
+            }
+            System.out.println("\n");
+        }
+    }
 
     /**
      * Metodo que valida todas las cadenas de texto recibidas a traves del formulario interactivo con el usuario.
@@ -142,8 +171,9 @@ public class Main {
         System.out.println("\n\n--- Resultados de codificación ---");
         try {
 
-            // Codificación de tipo SQL (si esta establecido), en concreto MySQL
-            if (sql) {
+            // Codificación de tipo SQL (si esta establecido), en concreto MySQL, para formulario y otros
+            if (sql && v) {
+                // Caso de procesamiento de formulario
                 MySQLCodec codec = new MySQLCodec(MySQLCodec.Mode.STANDARD);
                 System.out.println("-- Codificación para MySQL --");
                 System.out.println("Nombre: " + enc.encodeForSQL(codec, nombre));
@@ -154,10 +184,20 @@ public class Main {
                 System.out.println("Mes de expiración tarjeta crédito: " + enc.encodeForSQL(codec, mes));
                 System.out.println("Año de expiración tarjeta crédito: " + enc.encodeForSQL(codec, anio));
                 System.out.println("Código CVN tarjeta crédito: " + enc.encodeForSQL(codec, numero) + "\n");
+            } else if (sql){
+                // Caso de cadenas de texto desde entrada estandar
+                MySQLCodec codec = new MySQLCodec(MySQLCodec.Mode.STANDARD);
+                System.out.println("\n-- Codificación para MySQL (por orden) --");
+                // Para cada cadena leída, se codifica y se imprime por pantalla
+                for(String s : leidas){
+                    System.out.println(enc.encodeForSQL(codec,s));
+                }
+                System.out.println("\n");
             }
 
-            // Codificación de tipo HTML (si esta establecido)
-            if (html) {
+            // Codificación de tipo HTML (si esta establecido), para formulario y otras cadenas de texto
+            if (html && v) {
+                // Caso de procesamiento de formulario
                 System.out.println("-- Codificación para HTML --");
                 System.out.println("Nombre: " + enc.encodeForHTML(nombre));
                 System.out.println("Dirección: " + enc.encodeForHTML(direccion));
@@ -170,10 +210,19 @@ public class Main {
                         + enc.encodeForHTML(anio));
                 System.out.println("Código CVN tarjeta crédito: "
                         + enc.encodeForHTML(numero) + "\n");
+            } else if (html){
+                // Caso de cadenas de texto desde entrada estandar
+                System.out.println("\n-- Codificación para HTML (por orden) --");
+                // Para cada cadena leída, se codifica y se imprime por pantalla
+                for(String s : leidas){
+                    System.out.println(enc.encodeForHTML(s));
+                }
+                System.out.println("\n");
             }
 
-            // Codificación de tipo URL (si esta establecido)
-            if (url) {
+            // Codificación de tipo URL (si esta establecido), para formulario y otras cadenas de texto
+            if (url && v) {
+                // Caso de procesamiento de formulario
                 System.out.println("-- Codificación para URL --");
                 System.out.println("Nombre: " + enc.encodeForURL(nombre));
                 System.out.println("Dirección: " + enc.encodeForURL(direccion));
@@ -183,6 +232,14 @@ public class Main {
                 System.out.println("Mes de expiración tarjeta crédito: " + enc.encodeForURL(mes));
                 System.out.println("Año de expiración tarjeta crédito: " + enc.encodeForURL(anio));
                 System.out.println("Código CVN tarjeta crédito: " + enc.encodeForURL(numero) + "\n");
+            } else if (url){
+                // Caso de cadenas de texto desde entrada estandar
+                System.out.println("\n-- Codificación para URL (por orden) --");
+                // Para cada cadena leída, se codifica y se imprime por pantalla
+                for(String s : leidas){
+                    System.out.println(enc.encodeForURL(s));
+                }
+                System.out.println("\n");
             }
         } catch(EncodingException ex){
 
@@ -199,31 +256,47 @@ public class Main {
      * (contemplando posibles errores en cada tarea).
      */
     public static void interaccion(){
-
         // Se establece un método de interacción (mediante entrada estandar) con el usuario
-        // Mediante la interacción se rellenan todos los campos necesarios del formulario
-        Scanner entrada = new Scanner(System.in);
-        System.out.println("------ Formulario personal ------");
-        System.out.print("Nombre: ");
-        nombre = entrada.nextLine();
-        System.out.print("Dirección: ");
-        direccion = entrada.nextLine();
-        System.out.print("DNI: ");
-        dni = entrada.nextLine();
-        System.out.println("--- Información sobre la tarjeta de crédito ---");
-        System.out.print("Tipo: ");
-        tipo = entrada.nextLine();
-        System.out.print("Número: ");
-        numero = entrada.nextLine();
-        System.out.print("Mes de expiración: ");
-        mes = "";
-        mes = entrada.nextLine();
-        System.out.print("Año de expiración: ");
-        anio = entrada.nextLine();
-        System.out.print("CVN: ");
-        cvn = entrada.nextLine();
-        entrada.close();
-        System.out.println("------ Fin del formulario personal ------\n");
+        if(v) {
+            // Mediante la interacción se rellenan todos los campos necesarios del formulario
+            Scanner entrada = new Scanner(System.in);
+            System.out.println("------ Formulario personal ------");
+            System.out.print("Nombre: ");
+            nombre = entrada.nextLine();
+            System.out.print("Dirección: ");
+            direccion = entrada.nextLine();
+            System.out.print("DNI: ");
+            dni = entrada.nextLine();
+            System.out.println("--- Información sobre la tarjeta de crédito ---");
+            System.out.print("Tipo: ");
+            tipo = entrada.nextLine();
+            System.out.print("Número: ");
+            numero = entrada.nextLine();
+            System.out.print("Mes de expiración: ");
+            mes = "";
+            mes = entrada.nextLine();
+            System.out.print("Año de expiración: ");
+            anio = entrada.nextLine();
+            System.out.print("CVN: ");
+            cvn = entrada.nextLine();
+            entrada.close();
+            System.out.println("------ Fin del formulario personal ------\n");
+        } else {
+            // Mediante la interacción se adquieren varias cadenas de la salida estandar (para ser codificadas)
+            Scanner entrada = new Scanner(System.in);
+            String leido = "-1";
+            // Lee lineas sucesivas de la entrada estandar (se finaliza la lectura con una linea vacía)
+            while(leido.length()!=0){
+                System.out.print("Introduzca cualquier cadena (cadena vacía para finalizar): ");
+                // Lee de la entrada estandar
+                leido = entrada.nextLine();
+                // Si la cadena no es vacía, se añade a una lista para ser procesada posteriormente
+                if(leido.length()!=0) {
+                    leidas.add(leido);
+                }
+            }
+            System.out.println("\n");
+        }
 
         /*
          * Tareas a realizar
@@ -244,17 +317,21 @@ public class Main {
         if(e && validar){
             codificar();
         } else {
+            // Si se produce una validación correcta se informa al usuario (y se imprimen resultados en ciertos casos)
             if(validar && c && v){
+                imprimirResultados(v);
                 System.out.println("\nValidación y canonicalización correcta");
-            }else if(c && !v ){
+            } else if(c && !v ){
+                imprimirResultados(v);
                 System.out.println("\nCanonicalización correcta");
-            }
-            else {
+            } else if(validar){
+                System.out.println("\nValidación correcta");
+            } else {
                 if(v && !validar){
                     // Si no se produce una validación correcta, se avisa al usuario
-                    if(e) {
+                    if(e){
                         System.out.println("\nError en validación, se omite la codificación...");
-                    }else{
+                    } else {
                         System.out.println("\nError en validación");
                     }
                 }
