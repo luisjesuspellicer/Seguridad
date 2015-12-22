@@ -20,13 +20,15 @@ import java.util.Scanner;
  * Autores: Luis Jesús Pellicer Magallón (520256) y Raúl Piracés Alastuey (490790)
  */
 public class Main {
-    // Variables globales finales
+
+    // Variables globales finales (opciones del programa)
     public static final String VALIDAR = "-v";
     public static final String CANONICALIZAR = "-c";
     public static final String CODIFICAR = "-e";
     public static final String SQL = "SQL";
     public static final String HTML = "HTML";
     public static final String URL = "URL";
+
     // Opciones elegidas por el usuario por argumentos de invocación
     public static boolean v;
     public static boolean c;
@@ -34,6 +36,7 @@ public class Main {
     public static boolean sql;
     public static boolean html;
     public static boolean url;
+
     // Cadenas de texto tratadas (correspondientes al formulario tratado)
     static String nombre; static String direccion; static String dni;
     static String tipo; static String numero; static String mes; static String anio; static String cvn;
@@ -46,9 +49,11 @@ public class Main {
      * @return boolean true si todas las cadenas se han validado correctamente, false en otro caso.
      */
     public static boolean validar() {
+
         // Se establece el contexto de la validación (útil para logs)
         String contexto = "Validacion";
         try {
+
             // Se declara un objeto Validator (ESAPI), para realizar la validación de las cadenas de texto
             Validator val = ESAPI.validator();
             boolean fallo = false;
@@ -78,7 +83,8 @@ public class Main {
                 System.out.println("Fallo al validar el campo \"Número tarjeta crédito\"");
                 fallo = true;
             }
-            if(!val.isValidInput(contexto, mes, "CCMonth", 2, false)){
+
+            if(!val.isValidInput(contexto, mes, "CCMonth", 2, false)) {
                 System.out.println("Fallo al validar el campo \"Mes de expiración tarjeta crédito\"");
                 fallo = true;
             }
@@ -92,6 +98,7 @@ public class Main {
             }
             return !fallo;
         } catch (IntrusionException ex){
+
             // Si se detecta una "intrusión", se avisa al usuario
             System.err.println("Intrusion Exception: " + ex.getMessage());
             return false;
@@ -106,8 +113,10 @@ public class Main {
      * puedan dar lugar a bugs y comportamientos no deseados (así como fallos de seguridad).
      */
     public static void canonicalizar(){
+
         // Crea una instancia del objeto Encoder (ESAPI)
         Encoder enc = ESAPI.encoder();
+
         // Canonicaliza todas las cadenas requeridas
         nombre = enc.canonicalize(nombre);
         direccion = enc.canonicalize(direccion);
@@ -127,10 +136,12 @@ public class Main {
      * la cadena única, que impide posibles fallos futuros (en su posterior utilización).
      */
     public static void codificar(){
+
         // Crea una instancia del objeto Encoder (ESAPI)
         Encoder enc = ESAPI.encoder();
         System.out.println("\n\n--- Resultados de codificación ---");
         try {
+
             // Codificación de tipo SQL (si esta establecido), en concreto MySQL
             if (sql) {
                 MySQLCodec codec = new MySQLCodec(MySQLCodec.Mode.STANDARD);
@@ -144,6 +155,7 @@ public class Main {
                 System.out.println("Año de expiración tarjeta crédito: " + enc.encodeForSQL(codec, anio));
                 System.out.println("Código CVN tarjeta crédito: " + enc.encodeForSQL(codec, numero) + "\n");
             }
+
             // Codificación de tipo HTML (si esta establecido)
             if (html) {
                 System.out.println("-- Codificación para HTML --");
@@ -159,6 +171,7 @@ public class Main {
                 System.out.println("Código CVN tarjeta crédito: "
                         + enc.encodeForHTML(numero) + "\n");
             }
+
             // Codificación de tipo URL (si esta establecido)
             if (url) {
                 System.out.println("-- Codificación para URL --");
@@ -172,6 +185,7 @@ public class Main {
                 System.out.println("Código CVN tarjeta crédito: " + enc.encodeForURL(numero) + "\n");
             }
         } catch(EncodingException ex){
+
             // Si se produce cualquier error en la codificación, se notifica al usuario
             System.err.println("Error al codificar los datos: " + ex.getMessage());
         }
@@ -185,6 +199,7 @@ public class Main {
      * (contemplando posibles errores en cada tarea).
      */
     public static void interaccion(){
+
         // Se establece un método de interacción (mediante entrada estandar) con el usuario
         // Mediante la interacción se rellenan todos los campos necesarios del formulario
         Scanner entrada = new Scanner(System.in);
@@ -201,6 +216,7 @@ public class Main {
         System.out.print("Número: ");
         numero = entrada.nextLine();
         System.out.print("Mes de expiración: ");
+        mes = "";
         mes = entrada.nextLine();
         System.out.print("Año de expiración: ");
         anio = entrada.nextLine();
@@ -208,23 +224,41 @@ public class Main {
         cvn = entrada.nextLine();
         entrada.close();
         System.out.println("------ Fin del formulario personal ------\n");
-        // Tareas a realizar
-        // Si esta establecido, se realiza la tarea de canonicalización
+
+        /*
+         * Tareas a realizar
+         * Si esta establecido, se realiza la tarea de canonicalización
+          */
         if(c){
 
             canonicalizar();
         }
         boolean validar = true;
+
         // Si esta establecido, se realiza la tarea de validación
         if(v){
             validar = validar();
         }
+
         // Si esta establecido, y la validación a sido satisfactoria, se codifican los datos (según lo establecido)
         if(e && validar){
             codificar();
         } else {
-            // Si no se produce una validación correcta, se avisa al usuario
-            System.out.println("\nError en validación, se omite la codificación...");
+            if(validar && c && v){
+                System.out.println("\nValidación y canonicalización correcta");
+            }else if(c && !v ){
+                System.out.println("\nCanonicalización correcta");
+            }
+            else {
+                if(v && !validar){
+                    // Si no se produce una validación correcta, se avisa al usuario
+                    if(e) {
+                        System.out.println("\nError en validación, se omite la codificación...");
+                    }else{
+                        System.out.println("\nError en validación");
+                    }
+                }
+            }
         }
     }
 
@@ -240,20 +274,25 @@ public class Main {
      * @param args son los argumentos recibidos en la ejecución del programa.
      */
     public static void main(String[] args){
+
         // Comprueba el número de argumentos
         if(args.length>=0) {
+
             // Itera a traves de todos los argumentos pasados, indicando las tareas a realizar por el programa
             for (int i = 0; i < args.length; i++) {
                 String entrada = args[i].trim();
+
                 // Reconocimiento de tipo de opción leida
                 if (entrada.equalsIgnoreCase(VALIDAR)) {
                     v = true;
                 } else if (entrada.equalsIgnoreCase(CANONICALIZAR)) {
                     c = true;
                 } else if (entrada.equalsIgnoreCase(CODIFICAR)) {
+
                     // En el caso de codificación, un argumento extra debe de ser introducido
                     if (args.length > i+1) {
                         e = true;
+
                         // Reconocimiento de codificación seleccionada
                         if(SQL.equalsIgnoreCase(args[i+1].trim())){
                             sql = true;
@@ -262,27 +301,32 @@ public class Main {
                         } else if (URL.equalsIgnoreCase(args[i+1].trim())){
                             url = true;
                         } else {
+
                             // Codificación no correcta
                             System.err.println("Error, opción -e sin tipo correcto especificado.");
                             System.exit(1);
                         }
                         i++;
                     } else {
+
                         // Codificación no especificada
                         System.err.println("Error, formato erróneo, se debe especificar un argumento más.");
                         System.exit(1);
                     }
                 } else {
+
                     // Opción no reconocida introducida
                     System.err.println("Error, opción inválida.");
                     System.exit(1);
                 }
             }
         } else {
+
             // Número de argumentos inválido
             System.err.println("Error, formato erróneo, se debe especificar un argumento (como mínimo).");
             System.exit(1);
         }
+
         // Llamada al metodo principal de interacción y realización de tareas
         interaccion();
     }
