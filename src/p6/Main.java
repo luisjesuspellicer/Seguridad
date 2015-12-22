@@ -353,7 +353,7 @@ public class Main {
     public static void main(String[] args){
 
         // Comprueba el número de argumentos
-        if(args.length>=0) {
+        if(args.length>0) {
 
             // Itera a traves de todos los argumentos pasados, indicando las tareas a realizar por el programa
             for (int i = 0; i < args.length; i++) {
